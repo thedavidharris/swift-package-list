@@ -14,6 +14,7 @@ struct SwiftPackageListPlugin: Plugin {
         executable: Path,
         targetConfiguration: Configuration.TargetConfiguration?,
         projectPath: Path,
+        configurationPath: Path,
         pluginWorkDirectory: Path
     ) throws -> [Command] {
         let sourcePackagesPath = try sourcePackagesDirectory(pluginWorkDirectory: pluginWorkDirectory)
@@ -21,22 +22,30 @@ struct SwiftPackageListPlugin: Plugin {
         let outputPath = pluginWorkDirectory
         let packageOrder = targetConfiguration?.packageOrder ?? .source
         let requiresLicense = targetConfiguration?.requiresLicense ?? true
-        
+
         let ignorePackageArguments: [String] = targetConfiguration?.ignorePackages?.flatMap { identity in
             return ["--ignore-package", identity]
         } ?? []
-        
+
         let customPackagesFilePathArguments: [String] = targetConfiguration?.customPackagesFilePaths?.flatMap { filePath in
             return ["--custom-packages-file-path", filePath]
         } ?? []
-        
+
+        var inputFiles: [Path] = [
+            projectPath,
+            sourcePackagesPath.appending("workspace-state.json"),
+        ]
+        if FileManager.default.fileExists(atPath: configurationPath.string) {
+            inputFiles.append(configurationPath)
+        }
+
         let outputFiles: [Path]
         if let fileName = outputType.fileName {
             outputFiles = [outputPath.appending(fileName)]
         } else {
             outputFiles = []
         }
-        
+
         return [
             .buildCommand(
                 displayName: "SwiftPackageListPlugin",
@@ -49,6 +58,7 @@ struct SwiftPackageListPlugin: Plugin {
                     "--package-order", packageOrder.rawValue,
                     requiresLicense ? "--requires-license" : "",
                 ] + ignorePackageArguments + customPackagesFilePathArguments,
+                inputFiles: inputFiles,
                 outputFiles: outputFiles
             )
         ]

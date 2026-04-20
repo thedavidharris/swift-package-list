@@ -24,6 +24,7 @@ extension SwiftPackageListPlugin: XcodeBuildToolPlugin {
             executable: executable,
             targetConfiguration: targetConfiguration,
             projectPath: projectPath,
+            configurationPath: configurationPath,
             pluginWorkDirectory: context.pluginWorkDirectory
         )
     }
